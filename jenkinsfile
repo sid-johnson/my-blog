@@ -1,0 +1,81 @@
+#!groovy
+// some comment
+properties([disableConcurrentBuilds()])
+pipeline {
+  agent {
+    label 'master'
+  }
+
+triggers { pollSCM('* * * * *') }
+
+  options {
+    buildDiscarder(logRotator(numToKeepStr: '10', artifactNumToKeepStr: '10'))
+  }
+  stages {
+    stage("docker login") {
+      steps {
+        slackSend (color: '#FFFF00', message: "STARTED: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' (${env.BUILD_URL})")
+        echo " ========================= docker login =========================="
+          withCredentials([usernamePassword(credentialsId: 'dockerhub_osidorenkolanit', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
+          sh """
+          docker login -u $USERNAME -p $PASSWORD
+          """
+        }
+      }
+    }
+
+    stage("docker clean") {
+      steps {
+        echo " ======================== docker clean ==========================="
+        sh 'ssh root@172.27.31.104 /root/delete-container.sh'
+        sh '''#!/bin/bash
+              if
+                [ -z $(docker images -a | grep my-blog | awk '{print$3}') ]
+              then
+                echo "no image"
+              else
+                docker rmi $(docker images -a | grep my-blog | awk '{print$3}')
+              fi
+        '''
+      }
+    }
+    stage("create docker image") {
+      steps {
+        echo " ======================== start building image ==================="
+        sh 'docker build . -t osidorenkolanit/my-blog:latest'
+
+      }
+    }
+    stage("docker push") {
+      steps {
+        echo " ======================== start pushing image ===================="
+        sh '''
+        docker push osidorenkolanit/my-blog:latest
+        '''
+      }
+    }
+      stage("docker PING") {
+        steps {
+          echo " ==================================== PING  ===================="
+          sh '''
+          ping 172.27.31.104 -c3
+          '''
+        }
+    }
+    stage("docker run") {
+      steps {
+        echo " ======================= start run container ====================="
+        sh 'ssh root@172.27.31.104 docker run -dit --name my-blog-app -p 8081:80 osidorenkolanit/my-blog:latest'
+        echo "My blog --------> http://172.27.31.104:8081/my-blog"
+      }
+    }
+  }
+  post {
+    success {
+      slackSend (color: '#00FF00', message: "SUCCESSFUL: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' (${env.BUILD_URL})")
+    }
+    failure {
+      slackSend (color: '#FF0000', message: "FAIL: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' (${env.BUILD_URL})")
+    }
+  }
+}

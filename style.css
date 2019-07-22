@@ -1,0 +1,48 @@
+.background {
+
+  background: url(img/dbc79e92.png);
+}
+
+.top {
+  font-size: 100px;
+  font-family: Helvetica;
+  font-weight: bold;
+  color: white;
+  text-align: center;
+  background-color: #3877A1;
+
+}
+.title {
+  font-family: Helvetica;
+  font-size: 32px;
+  font-weight: bold;
+  color: white;
+}
+
+.bg_green {
+  background-color: mediumspringgreen;
+}
+
+.bg_coral {
+  background-color: lightcoral;
+}
+
+.bg_blue {
+  background-color: #3877A1;
+}
+
+.text {
+  font-family: Helvetica;
+
+}
+
+.price {
+  font-family: Helvetica;
+  font-weight: bold;
+  color: blue;
+}
+
+img {
+  height: 400px;
+  weight: 20%;
+}
